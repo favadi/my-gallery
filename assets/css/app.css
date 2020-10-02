@@ -1,0 +1,80 @@
+:root {
+    box-sizing: border-box;
+}
+
+*,
+::before,
+::after {
+    box-sizing: inherit;
+}
+
+body {
+    background-color: darkgray;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+.portfolio > figure {
+    display: inline-block;
+    max-width: 300px;
+    margin: 0;
+}
+
+.portfolio img {
+    width: 100%;
+    object-fit: cover;
+}
+
+.portfolio figcaption {
+    padding: 0.3em 0.8em;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    text-align: right;
+}
+
+.overlay {
+    position: absolute;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    transition: .5s ease;
+    opacity: 0;
+    padding: 0.6em;
+    text-align: center;
+}
+
+.overlay > button {
+    font-size: 20px;
+}
+
+.featured {
+    position: relative;
+}
+
+.featured:hover .overlay {
+    opacity: 1;
+}
+
+@supports (display: grid) {
+    .portfolio {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-auto-rows: 1fr;
+        grid-gap: 1em;
+        grid-auto-flow: dense;
+    }
+
+    .portfolio > figure {
+        display: flex;
+        flex-direction: column;
+        max-width: initial;
+    }
+
+    .portfolio img {
+        flex: 1;
+    }
+
+    .portfolio .featured {
+        grid-row: span 2;
+        grid-column: span 2;
+    }
+}
