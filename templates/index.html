@@ -22,12 +22,14 @@
     {{range .Images}}
         <figure class="featured">
             <img src="/gallery/{{.Name}}" alt="{{.Name}}"/>
-            <div class="overlay">
-                <button type="button">LIKE</button>
+            <div class="overlay {{if .Liked}}liked{{end}}">
+                <span class="liked-text">liked</span>
+                <button class="like-button" image-id="{{.ID}}" type="button">LIKE</button>
             </div>
             <figcaption>{{.Name}}</figcaption>
         </figure>
     {{end}}
 </div>
 </body>
+<script src="/js/app.js"></script>
 </html>

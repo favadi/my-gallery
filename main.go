@@ -14,6 +14,7 @@ import (
 	"github.com/favadi/my-gallery/auth"
 	"github.com/favadi/my-gallery/gallerybuilder"
 	"github.com/favadi/my-gallery/handler"
+	"github.com/favadi/my-gallery/storage"
 )
 
 const driver = "postgres"
@@ -42,7 +43,7 @@ func main() {
 	cookieStore := sessions.NewCookieStore([]byte(*cookieSecret))
 	cookieStore.Options.HttpOnly = true
 
-	h, err := handler.New(handler.NewPostgres(db), auth.NewAuthenticator(db), *assetsDir, cookieStore)
+	h, err := handler.New(storage.NewPostgres(db), auth.NewAuthenticator(db), *assetsDir, cookieStore)
 	if err != nil {
 		log.Fatal(err)
 	}

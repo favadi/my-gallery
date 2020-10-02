@@ -13,7 +13,7 @@ CREATE TABLE users
 
 INSERT INTO users(username, password_hash, full_name)
 VALUES ('demo1', '$2y$12$pRKXfflFLHUAok7iihRHBuk1x34fkwdFE2qc06LnZTCtPOVE8XdaO', 'Demo User 1'),
-       ('demo2', '$2y$12$bbyyU.P164NaVF/Q.oHrPO7s9FtQkRSFa/zJtzLOjzgMVTpeZ8HQK', 'Demo User 2'),
+       ('demo2', '$2y$12$YOAOVh8bo28IGb72GVfDhOV9hc5KzurfMxKXEDcJ83mkd5ZOLq7lG', 'Demo User 2'),
        ('demo3', '$2y$12$h.98mawu4p.iWkVCrGE9guNVZbUnf9crp3WNLYNTHJiPSbs3.Hopi', 'Demo User 3');
 
 -- +goose Down

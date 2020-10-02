@@ -113,6 +113,32 @@ body {
     position: relative;
 }
 
+
+.featured .overlay .liked-text {
+    visibility: hidden;
+}
+
+.featured .overlay.liked .liked-text {
+    visibility: visible;
+    text-transform: uppercase;
+    font-size: 1rem;
+    font-weight: bolder;
+    color: deeppink;
+}
+
+.featured .overlay.liked {
+    opacity: 1;
+    background-color: yellow;
+}
+
+.featured .overlay > button {
+    cursor: pointer;
+}
+
+.featured .overlay.liked > button {
+    visibility: hidden;
+}
+
 .featured:hover .overlay {
     opacity: 1;
 }

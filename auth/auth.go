@@ -34,7 +34,7 @@ type User struct {
 }
 
 func (a *Authenticator) Authenticate(username, password string) (User, error) {
-	const query = `SELECT username, password_hash, full_name, created, updated
+	const query = `SELECT id, username, password_hash, full_name, created, updated
 FROM users
 WHERE username = $1;`
 	var user UserDB
