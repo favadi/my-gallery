@@ -9,6 +9,7 @@
 </head>
 <body>
 <form action="/login" method="post" class="login">
+    {{.CSRFField}}
     <h2>Login to My Gallery</h2>
     <div class="container">
         <label for="username">Username</label>

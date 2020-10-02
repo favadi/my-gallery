@@ -13,6 +13,7 @@
         <li>Logged in as <b>{{.User.FullName}}</b></li>
         <li class="nav-right">
             <form action="/logout" method="post">
+                {{.CSRFField}}
                 <input type="submit" value="Logout">
             </form>
         </li>

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -19,12 +20,19 @@ import (
 
 const driver = "postgres"
 
+const (
+	environmentDev  = "development"
+	environmentProd = "production"
+)
+
 func main() {
 	var (
+		environment  = flag.String("env", environmentDev, "application running mode")
 		addr         = flag.String("addr", ":5000", "address to listen to")
 		dbString     = flag.String("data-source-name", "postgres://my-gallery:my-gallery@127.0.0.1:5432/my-gallery?sslmode=disable", "PostgresQL database DSN")
 		assetsDir    = flag.String("assets-dir", "assets", "path to images directory")
-		cookieSecret = flag.String("cookie-secret", "change-me-please", "path to images directory")
+		cookieSecret = flag.String("cookie-secret", "change-me-please", "secret key to sign auth cookie")
+		csrfSecret   = flag.String("csrf-secret", "change-me-please", "secret key to generate CSRF token")
 	)
 
 	flag.Parse()
@@ -42,8 +50,17 @@ func main() {
 	gob.Register(auth.User{}) // to store user information to cookie
 	cookieStore := sessions.NewCookieStore([]byte(*cookieSecret))
 	cookieStore.Options.HttpOnly = true
+	if *environment == environmentProd {
+		cookieStore.Options.Secure = true
+	}
 
-	h, err := handler.New(storage.NewPostgres(db), auth.NewAuthenticator(db), *assetsDir, cookieStore)
+	var csrfOptions []csrf.Option
+	if *environment == environmentDev {
+		csrfOptions = append(csrfOptions, csrf.Secure(false))
+	}
+	csrfMW := csrf.Protect([]byte(*csrfSecret), csrfOptions...)
+
+	h, err := handler.New(storage.NewPostgres(db), *assetsDir, cookieStore, auth.NewAuthenticator(db), csrfMW)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
@@ -46,11 +47,13 @@ func (s *server) index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = tmpl.Execute(w, struct {
-		User   auth.User
-		Images []storage.Image
+		CSRFField template.HTML
+		User      auth.User
+		Images    []storage.Image
 	}{
-		User:   user,
-		Images: images,
+		CSRFField: csrf.TemplateField(r),
+		User:      user,
+		Images:    images,
 	}); err != nil {
 		log.Printf("failed to render template: err=%s", err.Error())
 	}
@@ -88,21 +91,25 @@ func (s *server) likeImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func New(storage Storage, auth *auth.Authenticator, imagesDir string, sessionsStore sessions.Store) (http.Handler, error) {
+func New(storage Storage, imagesDir string, sessionsStore sessions.Store, auth *auth.Authenticator, csrfMW mux.MiddlewareFunc) (http.Handler, error) {
 	templates, err := template.New("my-gallery").ParseGlob("templates/*.html")
 	if err != nil {
 		return nil, err
 	}
 
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
 	s := &server{
 		templates:     templates,
 		auth:          auth,
-		decoder:       schema.NewDecoder(),
+		decoder:       decoder,
 		storage:       storage,
 		sessionsStore: sessionsStore,
 	}
 
 	r := mux.NewRouter()
+	r.Use(csrfMW)
 
 	r.PathPrefix("/css/").Methods(http.MethodGet).Handler(
 		http.StripPrefix("/css/", http.FileServer(http.Dir(filepath.Join(imagesDir, "css")))))

@@ -2,10 +2,12 @@ package handler
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net/http"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/gorilla/csrf"
 
 	"github.com/favadi/my-gallery/auth"
 )
@@ -33,7 +35,8 @@ func (s *server) authMiddleware(h http.Handler) http.Handler {
 }
 
 type showLoginFormData struct {
-	Errors validation.Errors
+	CSRFField template.HTML
+	Errors    validation.Errors
 }
 
 func (s *server) renderLoginForm(w http.ResponseWriter, r *http.Request, data showLoginFormData) {
@@ -49,7 +52,7 @@ func (s *server) renderLoginForm(w http.ResponseWriter, r *http.Request, data sh
 }
 
 func (s *server) showLogin(w http.ResponseWriter, r *http.Request) {
-	s.renderLoginForm(w, r, showLoginFormData{})
+	s.renderLoginForm(w, r, showLoginFormData{CSRFField: csrf.TemplateField(r)})
 }
 
 type loginForm struct {
@@ -86,7 +89,8 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 	user, err := s.auth.Authenticate(form.Username, form.Password)
 	if err == auth.ErrInvalidCredentials {
 		s.renderLoginForm(w, r, showLoginFormData{
-			map[string]error{"General": err},
+			CSRFField: csrf.TemplateField(r),
+			Errors:    map[string]error{"General": err},
 		})
 		return
 	} else if err != nil {
