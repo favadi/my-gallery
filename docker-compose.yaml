@@ -14,3 +14,29 @@ services:
       - POSTGRES_PASSWORD=my-gallery
     volumes:
       - postgres
+  my-gallery-migrate:
+    build:
+      context: .
+      dockerfile: ./migrations/Dockerfile
+    depends_on:
+      - postgres
+    entrypoint:
+      - ./migrate
+      - -data-source-name
+      - postgres://my-gallery:my-gallery@postgres:5432/my-gallery?sslmode=disable
+      - up
+  my-gallery:
+    build:
+      context: .
+    ports:
+      - 5000
+    depends_on:
+      - my-gallery-migrate
+    entrypoint:
+      - ./my-gallery
+      - -data-source-name
+      - postgres://my-gallery:my-gallery@postgres:5432/my-gallery?sslmode=disable
+      - -cookie-secret
+      - super-secret
+      - -csrf-secret
+      - really-super-secret

@@ -12,7 +12,7 @@ import (
 const driver = "postgres"
 
 func main() {
-	var dbString = flag.String("db-dsn", "postgres://my-gallery:my-gallery@127.0.0.1:5432/my-gallery?sslmode=disable", "PostgresQL database DSN")
+	var dbString = flag.String("data-source-name", "postgres://my-gallery:my-gallery@127.0.0.1:5432/my-gallery?sslmode=disable", "PostgresQL database DSN")
 
 	flag.Parse()
 
@@ -33,7 +33,7 @@ func main() {
 
 	command := args[0]
 
-	if err = goose.Run(command, db, ".", args[1:]...); err != nil {
+	if err = goose.Run(command, db, "sql", args[1:]...); err != nil {
 		log.Fatalf("goose run: %v", err)
 	}
 
