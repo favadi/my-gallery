@@ -10,8 +10,11 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/favadi/my-gallery/auth"
 )
 
 type storage interface {
@@ -44,9 +47,10 @@ FROM images;`
 }
 
 type server struct {
-	storage       storage
 	templates     *template.Template
-	imagesDir     string
+	auth          *auth.Authenticator
+	decoder       *schema.Decoder
+	storage       storage
 	sessionsStore sessions.Store
 }
 
@@ -64,27 +68,38 @@ func (s *server) index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := tmpl.Execute(w, struct {
+		User   auth.User
 		Images []Image
 	}{
+		User:   r.Context().Value(contextUserKey{}).(auth.User),
 		Images: images,
 	}); err != nil {
 		log.Printf("failed to render template: err=%s", err.Error())
 	}
 }
 
-func New(storage storage, imagesDir string, sessionsStore sessions.Store) (http.Handler, error) {
+func New(storage storage, auth *auth.Authenticator, imagesDir string, sessionsStore sessions.Store) (http.Handler, error) {
 	templates, err := template.New("my-gallery").ParseGlob("templates/*.html")
 	if err != nil {
 		return nil, err
 	}
 
-	s := &server{templates: templates, imagesDir: imagesDir, storage: storage, sessionsStore: sessionsStore}
+	s := &server{
+		templates:     templates,
+		auth:          auth,
+		decoder:       schema.NewDecoder(),
+		storage:       storage,
+		sessionsStore: sessionsStore,
+	}
 
 	r := mux.NewRouter()
+	r.Path("/login").Methods(http.MethodGet).HandlerFunc(s.showLogin)
+	r.Path("/login").Methods(http.MethodPost).HandlerFunc(s.login)
+	r.Path("/logout").Methods(http.MethodPost).HandlerFunc(s.logout)
 
-	r.Path("/").Methods(http.MethodGet).HandlerFunc(s.index)
-
-	r.Path("/login").Methods(http.MethodGet).HandlerFunc(s.login)
+	protected := r.Path("/").Subrouter()
+	protected.Use(s.authMiddleware)
+	protected.Methods(http.MethodGet).HandlerFunc(s.index)
 
 	r.PathPrefix("/css/").Methods(http.MethodGet).Handler(
 		http.StripPrefix("/css/", http.FileServer(http.Dir(filepath.Join(imagesDir, "css")))))

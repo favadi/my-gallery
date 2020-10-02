@@ -9,8 +9,71 @@
 }
 
 body {
-    background-color: darkgray;
+    background-color: whitesmoke;
     font-family: Helvetica, Arial, sans-serif;
+}
+
+.login {
+    border: 3px solid #f1f1f1;
+    max-width: 400px;
+    padding: 1em;
+    margin-left: calc(50% - 400px / 2);
+}
+
+.login label {
+    font-weight: bold;
+}
+
+.login input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 0.6em;
+    margin-top: 0.6em;
+    margin-bottom: 0.6em;
+}
+
+.login input[type="submit"] {
+    background-color: green;
+    color: white;
+    font-size: 1rem;
+    padding: 0.4rem 0.8rem;
+    border: none;
+}
+
+.err-msg {
+    color: red;
+    margin-top: 0;
+    font-size: 0.8rem;
+}
+
+.site-nav {
+    display: flex;
+    padding: .5em;
+    background-color: lightseagreen;
+    list-style-type: none;
+    border-radius: .2em;
+}
+
+.site-nav > li {
+    margin-top: 0;
+    color: black;
+}
+
+.site-nav > li > form > input {
+    display: block;
+    padding: 0.6em 1em;
+    background-color: lightcoral;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: .2em;
+}
+
+.site-nav > li + li {
+    margin-left: 1.5em;
+}
+
+.site-nav > .nav-right {
+    margin-left: auto;
 }
 
 .portfolio > figure {
@@ -42,8 +105,8 @@ body {
     text-align: center;
 }
 
-.overlay > button {
-    font-size: 20px;
+.overlay button {
+    font-size: 1rem;
 }
 
 .featured {

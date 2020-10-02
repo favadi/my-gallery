@@ -8,6 +8,16 @@
     <title>My Gallery</title>
 </head>
 <body>
+<nav>
+    <ul class="site-nav">
+        <li>Logged in as <b>{{.User.FullName}}</b></li>
+        <li class="nav-right">
+            <form action="/logout" method="post">
+                <input type="submit" value="Logout">
+            </form>
+        </li>
+    </ul>
+</nav>
 <div class="portfolio">
     {{range .Images}}
         <figure class="featured">

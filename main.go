@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/gob"
 	"flag"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
+	"github.com/favadi/my-gallery/auth"
 	"github.com/favadi/my-gallery/gallerybuilder"
 	"github.com/favadi/my-gallery/handler"
 )
@@ -36,10 +38,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	gob.Register(auth.User{}) // to store user information to cookie
 	cookieStore := sessions.NewCookieStore([]byte(*cookieSecret))
 	cookieStore.Options.HttpOnly = true
 
-	h, err := handler.New(handler.NewPostgres(db), *assetsDir, cookieStore)
+	h, err := handler.New(handler.NewPostgres(db), auth.NewAuthenticator(db), *assetsDir, cookieStore)
 	if err != nil {
 		log.Fatal(err)
 	}
