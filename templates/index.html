@@ -24,10 +24,11 @@
         <figure class="featured">
             <img src="/gallery/{{.Name}}" alt="{{.Name}}"/>
             <div class="overlay {{if .Liked}}liked{{end}}">
-                <span class="liked-text">liked</span>
-                <button class="like-button" image-id="{{.ID}}" type="button">LIKE</button>
+                <span class="liked-text">❤️</span>
+                <button class="like-button" image-id="{{.ID}}" type="button">like</button>
+                <button class="unlike-button" image-id="{{.ID}}" type="button">unlike</button>
             </div>
-            <figcaption>{{.Name}}</figcaption>
+            <figcaption>{{.Name}} | {{humanize_bytes .Size}} | {{.Format}}</figcaption>
         </figure>
     {{end}}
 </div>

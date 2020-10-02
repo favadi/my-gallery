@@ -34,19 +34,23 @@ func NewPostgres(db *sqlx.DB) *Postgres {
 }
 
 func (p *Postgres) Store(images []Image) error {
-	const query = `INSERT INTO images (name, format)
-VALUES (unnest($1::TEXT[]), unnest($2::TEXT[]))
+	const query = `INSERT INTO images (name, format, size)
+VALUES (unnest($1::TEXT[]),
+        unnest($2::TEXT[]),
+        unnest($3::INTEGER[]))
 ON CONFLICT DO NOTHING;`
 
 	var (
 		names   []string
 		formats []string
+		sizes   []int64
 	)
 	for _, img := range images {
 		names = append(names, img.Name)
 		formats = append(formats, img.Format)
+		sizes = append(sizes, img.Size)
 	}
-	_, err := p.db.Exec(query, pq.Array(names), pq.Array(formats))
+	_, err := p.db.Exec(query, pq.Array(names), pq.Array(formats), pq.Array(sizes))
 	return err
 }
 
@@ -62,10 +66,11 @@ func NewGallery(storage storage, imagesDir string) *Gallery {
 type Image struct {
 	Name   string
 	Format string
+	Size   int64
 	Valid  bool
 }
 
-func parseImage(filePath string) (Image, error) {
+func parseImage(filePath string, info os.FileInfo) (Image, error) {
 	imgFile, err := os.Open(filePath)
 	if err != nil {
 		return Image{}, err
@@ -76,12 +81,12 @@ func parseImage(filePath string) (Image, error) {
 	if _, err = imgFile.Read(imgHeaderBytes); err != nil {
 		return Image{}, err
 	}
-
 	contentType := http.DetectContentType(imgHeaderBytes)
 
 	img := Image{
 		Name:   filepath.Base(filePath),
 		Format: contentType,
+		Size:   info.Size(),
 		Valid:  false,
 	}
 
@@ -102,7 +107,7 @@ func (g *Gallery) lookupImages() ([]Image, error) {
 			return nil
 		}
 
-		img, err := parseImage(path)
+		img, err := parseImage(path, info)
 		if err != nil {
 			return err
 		}

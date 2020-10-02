@@ -18,6 +18,7 @@ type Image struct {
 	ID      int64     `db:"id"`
 	Name    string    `db:"name"`
 	Format  string    `db:"format"`
+	Size    int64     `db:"size"`
 	Created time.Time `db:"created"`
 	Liked   bool      `db:"liked"`
 }
@@ -27,6 +28,7 @@ func (p *Postgres) Images(userID int64) ([]Image, error) {
        images.name,
        images.format,
        images.created,
+       images.size,
        CASE WHEN likes.id IS NOT NULL THEN TRUE ELSE FALSE END AS liked
 FROM images
          LEFT JOIN likes ON images.id = likes.image_id AND likes.user_id = $1
@@ -38,7 +40,7 @@ ORDER BY created, name;`
 	return images, nil
 }
 
-func (p *Postgres) CreateLike(userID, imageID int64) (int64, error) {
+func (p *Postgres) Like(userID, imageID int64) (int64, error) {
 	const query = `INSERT INTO likes(user_id, image_id)
 VALUES ($1, $2)
 ON CONFLICT (user_id, image_id) DO UPDATE SET updated = now()
@@ -49,4 +51,13 @@ RETURNING id;`
 		return 0, err
 	}
 	return id, nil
+}
+
+func (p *Postgres) Unlike(userID, imageID int64) error {
+	const query = `DELETE
+FROM likes
+WHERE user_id = $1
+  AND image_id = $2;`
+	_, err := p.db.Exec(query, userID, imageID)
+	return err
 }

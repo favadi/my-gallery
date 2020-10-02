@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dustin/go-humanize"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -21,7 +22,8 @@ import (
 
 type Storage interface {
 	Images(userID int64) ([]storage.Image, error)
-	CreateLike(userID, imageID int64) (int64, error)
+	Like(userID, imageID int64) (int64, error)
+	Unlike(userID, imageID int64) error
 }
 
 type server struct {
@@ -59,7 +61,7 @@ func (s *server) index(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type likeImageRequest struct {
+type imageRequest struct {
 	ImageID int64 `json:"image_id"`
 }
 
@@ -70,7 +72,7 @@ type likeImageResponse struct {
 func (s *server) likeImage(w http.ResponseWriter, r *http.Request) {
 	var (
 		user = r.Context().Value(contextUserKey{}).(auth.User)
-		data likeImageRequest
+		data imageRequest
 	)
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
@@ -78,21 +80,55 @@ func (s *server) likeImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	likeID, err := s.storage.CreateLike(user.ID, data.ImageID)
+	likeID, err := s.storage.Like(user.ID, data.ImageID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("user %d likes image %d", user.ID, likeID)
+	log.Printf("user %d likes image %d", user.ID, data.ImageID)
 	if err = json.NewEncoder(w).Encode(&likeImageResponse{ID: likeID}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
+type unlikeImageResponse struct {
+	Success bool `json:"success"`
+}
+
+func (s *server) unlikeImage(w http.ResponseWriter, r *http.Request) {
+	var (
+		user = r.Context().Value(contextUserKey{}).(auth.User)
+		data imageRequest
+	)
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := s.storage.Unlike(user.ID, data.ImageID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("user %d unlikes image %d", user.ID, data.ImageID)
+	if err = json.NewEncoder(w).Encode(&unlikeImageResponse{
+		Success: true,
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func New(storage Storage, imagesDir string, sessionsStore sessions.Store, auth *auth.Authenticator, csrfMW mux.MiddlewareFunc) (http.Handler, error) {
-	templates, err := template.New("my-gallery").ParseGlob("templates/*.html")
+	templates, err := template.New("my-gallery").
+		Funcs(template.FuncMap{
+			"humanize_bytes": func(size int64) string {
+				return humanize.Bytes(uint64(size))
+			},
+		}).ParseGlob("templates/*.html")
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +145,6 @@ func New(storage Storage, imagesDir string, sessionsStore sessions.Store, auth *
 	}
 
 	r := mux.NewRouter()
-	r.Use(csrfMW)
 
 	r.PathPrefix("/css/").Methods(http.MethodGet).Handler(
 		http.StripPrefix("/css/", http.FileServer(http.Dir(filepath.Join(imagesDir, "css")))))
@@ -118,14 +153,21 @@ func New(storage Storage, imagesDir string, sessionsStore sessions.Store, auth *
 	r.PathPrefix("/gallery/").Methods(http.MethodGet).Handler(
 		http.StripPrefix("/gallery/", http.FileServer(http.Dir(filepath.Join(imagesDir, "gallery")))))
 
-	r.Path("/login").Methods(http.MethodGet).HandlerFunc(s.showLogin)
-	r.Path("/login").Methods(http.MethodPost).HandlerFunc(s.login)
-	r.Path("/logout").Methods(http.MethodPost).HandlerFunc(s.logout)
+	indexSubRouter := r.PathPrefix("/").Subrouter()
+	indexSubRouter.Use(s.authMiddleware)
+	indexSubRouter.Use(csrfMW)
+	indexSubRouter.Path("/").Methods(http.MethodGet).HandlerFunc(s.index)
 
-	protected := r.PathPrefix("/").Subrouter()
-	protected.Use(s.authMiddleware)
-	protected.Path("/").Methods(http.MethodGet).HandlerFunc(s.index)
-	protected.Path("/likes").Methods(http.MethodPost).HandlerFunc(s.likeImage)
+	authSubRouter := r.PathPrefix("/").Subrouter()
+	authSubRouter.Use(csrfMW)
+	authSubRouter.Path("/login").Methods(http.MethodGet).HandlerFunc(s.showLogin)
+	authSubRouter.Path("/login").Methods(http.MethodPost).HandlerFunc(s.login)
+	authSubRouter.Path("/logout").Methods(http.MethodPost).HandlerFunc(s.logout)
+
+	apiSubRouter := r.PathPrefix("/").Subrouter()
+	apiSubRouter.Use(s.authMiddleware)
+	apiSubRouter.Path("/likes").Methods(http.MethodPost).HandlerFunc(s.likeImage)
+	apiSubRouter.Path("/likes").Methods(http.MethodDelete).HandlerFunc(s.unlikeImage)
 
 	return handlers.LoggingHandler(os.Stdout, r), nil
 }

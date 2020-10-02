@@ -133,10 +133,21 @@ body {
 
 .featured .overlay > button {
     cursor: pointer;
+    border-radius: .2em;
+    border: 1px solid gray;
+    padding: 0.5rem 1rem;
 }
 
-.featured .overlay.liked > button {
-    visibility: hidden;
+.featured .overlay > button.unlike-button {
+    display: none;
+}
+
+.featured .overlay.liked > button.unlike-button {
+    display: inline-block;
+}
+
+.featured .overlay.liked > button.like-button {
+    display: none;
 }
 
 .featured:hover .overlay {

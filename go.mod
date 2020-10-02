@@ -3,6 +3,7 @@ module github.com/favadi/my-gallery
 go 1.15
 
 require (
+	github.com/dustin/go-humanize v1.0.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.2.2
 	github.com/gorilla/csrf v1.7.0
 	github.com/gorilla/handlers v1.5.1
